@@ -1,0 +1,21 @@
+[package]
+name = "discordbirthday"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+
+[dependencies]
+serenity = "0.10"
+# Yeeted from https://github.com/diesel-rs/diesel/issues/1854#issuecomment-828407144 / SO https://stackoverflow.com/a/68616930
+diesel = { version = "^2.0.0", features = ["sqlite", "uuid", "chrono"], git = "https://github.com/diesel-rs/diesel" }
+
+dotenv = "0.15"
+chrono = "0.4"
+tokio = { version = "1.12", features = ["macros"] }
+fastrand = "1.5.0"
