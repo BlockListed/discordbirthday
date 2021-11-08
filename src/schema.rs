@@ -1,6 +1,5 @@
 table! {
-    birthdays (id, userid) {
-        id -> Integer,
+    birthdays (userid, guildid, allexceptdate) {
         userid -> Text,
         channelid -> Text,
         guildid -> Text,

@@ -1,7 +1,7 @@
 [package]
-name = "discordbirthday"
+name = "dbday"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -17,5 +17,5 @@ diesel = { version = "^2.0.0", features = ["sqlite", "uuid", "chrono"], git = "h
 
 dotenv = "0.15"
 chrono = "0.4"
-tokio = { version = "1.12", features = ["macros"] }
+tokio = { version = "1.12", features = ["macros", "rt-multi-thread"] }
 fastrand = "1.5.0"

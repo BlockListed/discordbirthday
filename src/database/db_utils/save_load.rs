@@ -14,7 +14,7 @@ pub fn save(conn: &mut SqliteConnection, data: Vec<Birthday>) -> Result<(), dies
             .set(table::id.eq(excluded(table::id)))
             .execute(conn) {
                 Ok(_) => (),
-                Err(errdata) => return Err(errdata)
+                Err(errdata) => return Err(errdata),
             }
     }
     Ok(())

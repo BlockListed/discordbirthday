@@ -8,13 +8,14 @@ use dotenv::dotenv;
 use tokio::time::{interval, Duration};
 use chrono::NaiveDate;
 
-#[allow(unused_imports)]
-use discordbirthday::save_load;
-use discordbirthday::models;
+use dbday::models;
 
-fn main() {
+#[allow(unused_imports)]
+use dbday::macros;
+
+#[tokio::main]
+async fn main() {
     dotenv().ok();
 
     let _bday_cache: Arc<Mutex<HashMap<NaiveDate, Vec<models::Birthday>>>> = Arc::new(Mutex::new(HashMap::new()));
-
 }

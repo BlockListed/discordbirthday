@@ -15,6 +15,7 @@ pub mod database;
 pub use database::save_load;
 pub use database::id_gen;
 pub mod utils;
+pub use utils::macros;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
