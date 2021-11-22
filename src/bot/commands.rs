@@ -1,3 +1,8 @@
+/*
+* Todo:
+* - Fix error Handling in add function to actually error out. 
+*/
+
 use serenity::{async_trait, futures::future::BoxFuture, prelude::*};
 use std::ops::{DerefMut};
 use serenity::model::prelude::*;
