@@ -1,2 +1,2 @@
-pub mod bday;
 pub mod macros;
+pub mod discord;

@@ -17,4 +17,3 @@ https://stackoverflow.com/a/57767413 (libs.rs vs main.rs differences)
   * Persistent check for birthdays
 * Diesel
   * Connect to db
-  * Save and Load

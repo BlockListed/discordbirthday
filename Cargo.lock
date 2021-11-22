@@ -155,6 +155,7 @@ dependencies = [
  "diesel",
  "dotenv",
  "fastrand",
+ "lazy_static",
  "serenity",
  "tokio",
 ]

@@ -1,11 +1,12 @@
+use diesel::table;
+
 table! {
-    birthdays (userid, guildid, allexceptdate) {
+    birthdays (userid) {
         userid -> Text,
         channelid -> Text,
         guildid -> Text,
         date -> Date,
         allexceptdate -> Bool,
-        notifyall -> Bool,
         notifyrole -> Text,
     }
 }
