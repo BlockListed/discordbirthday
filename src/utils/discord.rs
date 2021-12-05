@@ -60,8 +60,14 @@ pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
 
     let channel = ChannelId(bday.channelid.parse::<u64>().unwrap()).name(ctx).await.unwrap();
     let date = crate::utils::date_as_year_today(bday.date);
+    let date_day_end = match date.format("%d").to_string().parse::<i32>().unwrap() % 10 {
+        1 => "st",
+        2 => "nd",
+        3 => "rd",
+        _ => "th"
+    };
     format!("In channel: {}, Birthdate: {}, Role to notify: {}, Carlomode: {} \n",
-    channel, date.format("%A the %d of %B"), role, bday.allexceptdate)
+    channel, date.format(format!("%d{} of %B", date_day_end).as_str()), role, bday.allexceptdate)
 }
 
 pub async fn get_username(ctx: &Context, id: String, guild_id: String) -> String {
