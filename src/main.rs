@@ -38,9 +38,6 @@ mod utils;
 
 use models::Birthday;
 
-#[allow(unused_imports)]
-use bot::commands;
-
 lazy_static! {
     static ref DB: Mutex<SqliteConnection> = Mutex::new(establish_connection());
 }
@@ -78,7 +75,7 @@ async fn poll_bdays(client: Arc<Client>) {
         loop {
             let http = (cache_and_http).http.clone();
             let today_naive = Utc::today().naive_local();
-            let mut bdays_today = birthdays.filter(date.eq(utils::date_as_year_zero(today_naive)))
+            let mut bdays_today = birthdays.filter(date.eq(utils::date_as_year_zero(today_naive))).filter(allexceptdate.eq(false))
             .load::<models::Birthday>(DB.lock().unwrap().deref_mut()).unwrap();
             bday_process_vec_and_update(http.clone(), today_naive, &mut bdays_today).await;
 
