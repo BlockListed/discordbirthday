@@ -8,6 +8,7 @@ pub struct Birthday {
     pub channelid: String,
     pub guildid: String,
     pub date: NaiveDate,
+    pub lastdate: NaiveDate,
     pub allexceptdate: bool,
-    pub notifyrole: String,
+    pub notifyrole: Option<String>,
 }

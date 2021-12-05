@@ -1,15 +1,18 @@
-use serenity::{async_trait, futures::future::BoxFuture, prelude::*};
-use std::ops::{DerefMut};
+use serenity::{async_trait, prelude::*};
+use std::ops::DerefMut;
 use serenity::model::prelude::*;
 use chrono::NaiveDate;
-use crate::{check_userid, utils::discord};
+use crate::utils::{discord::IdTypes, discord};
+use crate::parse_discordid;
+use crate::handle_discord;
+use crate::put_response;
 
 use serenity::framework::standard::{
     macros::{command, group},
     Args, CommandResult
 };
-use serenity::model::id::{ChannelId, RoleId};
-use serenity::model::prelude::Message;
+#[allow(unused_imports)]
+use serenity::model::prelude::*;
 use diesel::prelude::*;
 
 use crate::models::Birthday;
@@ -17,7 +20,7 @@ use crate::schema::birthdays;
 
 use crate::DB;
 
-struct Handler;
+pub struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -27,47 +30,64 @@ impl EventHandler for Handler {
 }
 
 #[group]
-
+#[commands(add, list, delete)]
 struct Commands;
 
 
 #[command]
 #[only_in(guilds)]
-#[description = "add: Add a new birthday to the calendar. \n Usage: ;add @Member day month @Notifyrole carlomode[1/0]"]
-async fn add(ctx: &Context, msg: &Message)->CommandResult<()> {
-    let tokens = msg.content.split(' ').collect::<Vec<&str>>();
-    
-    let userid = check_userid!(tokens[1].to_string(), ctx, msg);
-
-    let mut notifyid = tokens[4].to_string();
-    if notifyid.len() < 20 {
-        msg.channel_id.say(ctx, "Your inputed role wasn't valid!").await?;
+#[description = "add: Add a new birthday to the calendar. \n`Usage: ;add @Member day month @Notifyrole Option<carlomode[1/0]>`"]
+async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
+    if args.len() < 4 {
+        put_response!("Wrong number of arguments! \n`Usage: ;add @Member day month @Notifyrole Option<carlomode[1/0]>`", ctx, msg);
     }
-    notifyid.remove(0);
-    notifyid.remove(0);
-    notifyid.pop();
-
-    match notifyid.parse::<u64>() {
-        Ok(_) => (),
+    let r_userid = parse_discordid!(IdTypes::User, handle_discord!(args.single::<String>(), ctx, msg, "commands_add_userid"), ctx, msg);
+    let userid = match UserId(match r_userid.parse::<u64>() {
+        Ok(x) => x,
         Err(_) => {
-        msg.channel_id.say(ctx, format!("Your value \"{}\" wasn't a valid role!", notifyid)).await?;
+            put_response!("User was invalid!", ctx, msg);
         },
-    }
+    }).to_user_cached(ctx).await {
+        Some(_) => r_userid,
+        None => {
+            put_response!(format!("User <@{}> not found!", r_userid), ctx, msg);
+        }
+    };
 
-    let day: u32 = match tokens[2].parse::<u32>() {
+    let day: u32 = match args.single::<u32>() {
         Ok(val) => val,
         Err(_) => {
-            msg.channel_id.say(ctx, format!("Your value \"{}\" wasn't a valid numer!", tokens[2])).await?;
-            return Ok(());
+            put_response!("Your value wasn't a valid number!", ctx, msg);
         }
     };
-    let month: u32 = match tokens[3].parse::<u32>() {
+    let month: u32 = match args.single::<u32>() {
         Ok(val) => val,
         Err(_) => {
-            msg.channel_id.say(ctx, format!("Your value \"{}\" wasn't a valid numer!", tokens[3])).await?;
-            return Ok(());
+            put_response!("Your value wasn't a valid number!", ctx, msg);
         }
     };
+
+    let p_notifyid = parse_discordid!(IdTypes::Role, handle_discord!(args.single::<String>(), ctx, msg, "commands_add_notifyid"), ctx, msg);
+
+    let notifyid: Option<String> = match p_notifyid.as_str() {
+        "everyone" => {
+            None
+        }
+        x => Some({
+            match RoleId(match x.parse::<u64>() {
+                Ok(y) => y,
+                Err(_) => {
+                    put_response!(format!("Your value `{}` wasn't a valid role!", x), ctx, msg);
+                },
+            }).to_role_cached(ctx).await {
+                Some(_) => x.to_string(),
+                None => {
+                    put_response!(format!("Your value `{}` wasn't a valid role!", x), ctx, msg);
+                }
+            }
+        })
+    }; 
+
     let year: i32 = 0;
 
     let guildid = msg.guild_id.unwrap().to_string();
@@ -76,7 +96,12 @@ async fn add(ctx: &Context, msg: &Message)->CommandResult<()> {
 
     let date: NaiveDate = NaiveDate::from_ymd(year, month, day);
 
-    let allexceptdate: bool = matches!(tokens[5], "1");
+    let allexceptdate: bool;
+    if args.len() == 5 {
+        allexceptdate = matches!(args.current(), Some("1"));
+    } else {
+        allexceptdate = false;
+    }
 
     let bday = Birthday {
         userid,
@@ -84,54 +109,60 @@ async fn add(ctx: &Context, msg: &Message)->CommandResult<()> {
         notifyrole: notifyid,
         guildid,
         date,
+        lastdate: NaiveDate::from_ymd(0, 1, 1),
         allexceptdate,
     };
 
     if diesel::insert_into(birthdays::dsl::birthdays)
     .values(bday)
     .execute(DB.lock().unwrap().deref_mut()).is_ok() {
-        msg.channel_id.say(ctx, format!("Succesfully added birthday to db. <@{}>", msg.author.id)).await?;
+        put_response!(format!("Succesfully added birthday to db. <@{}>", msg.author.id), ctx, msg);
     } else {
-        msg.channel_id.say(ctx, format!("Couldn't add birthday to db. <@{}>", msg.author.id)).await?;
+        put_response!(format!("Couldn't add birthday to db. <@{}>", msg.author.id), ctx, msg);
     }
-    Ok(())
 }
 
 #[command]
 #[only_in(guilds)]
-#[description = "list: list all birthdays in server or get entry for a user. \n Usage: ;list [member]"]
-async fn list(ctx: &Context, msg: &Message)->CommandResult {
-    let tokens = msg.content.split(' ').collect::<Vec<&str>>();
-    
-    if tokens.len() == 2 {
-        let userid = check_userid!(tokens[1].to_string(), ctx, msg);
+#[description = "list: list all birthdays in server or get entry for a user. \n`Usage: ;list [member]`"]
+async fn list(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
+    if args.len() == 1 {
+        let userid = parse_discordid!(IdTypes::User, args.single::<String>().unwrap(), ctx, msg);
         let result: Birthday = birthdays::dsl::birthdays
         .filter(birthdays::dsl::userid.eq(userid))
         .first(DB.lock().unwrap().deref_mut()).unwrap();
-
-        let role_id = result.notifyrole.parse::<u64>().unwrap();
-
-        let role = RoleId(role_id).to_role_cached(ctx).await.unwrap();
-        
-        msg.channel_id.say(ctx, format!("In channel: <#{}>, birthdate: {}, carlomode: {}, role to notify `{}`",
-        result.channelid, result.date.format("%A the %dth of %B %Y"), result.allexceptdate, role.name)).await?;
-    } else if tokens.len() == 1 {
+       
+        put_response!(discord::format_bday(ctx, result).await, ctx, msg);
+    } else {
         let results: Vec<Birthday> = birthdays::dsl::birthdays.filter(birthdays::dsl::guildid.eq(msg.guild_id.unwrap().as_u64().to_string()))
         .load::<Birthday>(DB.lock().unwrap().deref_mut()).unwrap();
         
         let mut formatted_results: String = String::new();
 
         for i in results {
-            let role_id = i.notifyrole.parse::<u64>().unwrap();
-
-            let role = RoleId(role_id).to_role_cached(ctx).await.unwrap();
-            formatted_results.push_str(format!("In channel: <#{}>, birthdate: {}, carlomode: {}, role to notify `{}`. \n",
-            i.channelid, i.date.format("%A the %dth of %B %Y"), i.allexceptdate, role.name).as_str());
+            formatted_results.push_str(discord::format_bday(ctx, i).await.as_str());
         }
 
-        msg.channel_id.say(ctx, format!("Birthdays in this server: ```\n{}```", formatted_results)).await?;
-    } else {
-        msg.channel_id.say(ctx, "Wrong amount of arguments. Check help.").await?;
+        put_response!(format!("Birthdays in this server: ```\n{}```", formatted_results), ctx, msg);
     }
-    return Ok(());
+}
+
+#[command]
+#[only_in(guilds)]
+#[description = "delete: delete a birthday from db. \nUsage: `;delete [member]`"]
+async fn delete(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
+    if args.len() != 1 {
+        put_response!("Wrong number of arguments! \n`Usage: ;delete [member]`", ctx, msg);
+    }
+
+    let user = parse_discordid!(IdTypes::User, handle_discord!(args.single::<String>(), ctx, msg, "commands_delete_userid"), ctx, msg);
+    let user_format = user.clone();
+
+    if diesel::delete(birthdays::dsl::birthdays)
+        .filter(birthdays::dsl::userid.eq(user))
+        .execute(DB.lock().unwrap().deref_mut()).is_ok() {
+            put_response!(format!("Succesfully deleted user <@{}> from db.", user_format), ctx, msg);
+    } else {
+            put_response!(format!("Couldn't delete user <@{}> from db.", user_format), ctx, msg);
+    }
 }

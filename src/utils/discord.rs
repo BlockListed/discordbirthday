@@ -1,33 +1,102 @@
-pub fn check_and_format_userid(mut userid: String) -> Result<String, String> {
-    if userid.len() < 20 {
+/*
+TODO:
+* Implement Embed for formatting.
+*/
+
+use std::cmp::PartialEq;
+use serenity::client::Context;
+use serenity::model::prelude::*;
+use crate::models::Birthday;
+
+#[allow(dead_code)]
+#[derive(PartialEq, Clone)]
+pub enum IdTypes {
+    User,
+    Role,
+    Channel,
+}
+
+pub fn check_and_format_discordid(id_type: IdTypes, r_id: String) -> Result<String, String> {
+    let min_id_length = match id_type {
+        IdTypes::User => 20,
+        IdTypes::Role => 21,
+        IdTypes::Channel => 20
+    };
+    if id_type == IdTypes::Role && r_id == "@everyone" {
+        return Ok("everyone".to_string());
+    }
+    if r_id.len() < min_id_length{
         return Err("Your inputed user wasn't valid!".to_string());
     }
-    userid.remove(0);
-    userid.remove(0);
-    userid.pop();
-    if userid.starts_with('!') {
-        userid.remove(0);
+    let id_firstchar = match id_type {
+        IdTypes::User => 2,
+        IdTypes::Role => 3,
+        IdTypes::Channel => 2,
+    };
+    let mut id = r_id[id_firstchar..r_id.len() - 1].to_string();
+    if id_type == IdTypes::User && id.starts_with('!') {
+        id.remove(0);
     }
-    match userid.parse::<u64>() {
+    match id.parse::<u64>() {
         Ok(_) => (),
         Err(_) => {
-        return Err(format!("Your value \"{}\" wasn't a valid user!", userid));
+        return Err(format!("Your value \"{}\" wasn't a valid {}!", r_id, match id_type {
+            IdTypes::User => "user",
+            IdTypes::Role => "role",
+            IdTypes::Channel => "channel"
+        }));
         },
     }
 
-    Ok(userid)
+    Ok(id)
+}
+
+
+pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
+    let user = UserId(bday.userid.parse::<u64>().unwrap()).to_user_cached(ctx).await.unwrap().name;
+
+    let role = match bday.notifyrole {
+        Some(x) => RoleId(x.parse::<u64>().unwrap()).to_role_cached(ctx).await.unwrap().name,
+        None => "everyone".to_string()
+    };
+
+    let channel = ChannelId(bday.channelid.parse::<u64>().unwrap()).name(ctx).await.unwrap();
+    format!("User: {},In channel: {}, Birthdate: {}, Role to notify: {}, Carlomode: {} \n",
+    user, channel, bday.date.format("%A the %dth of %B"), role, bday.allexceptdate)
 }
 
 #[macro_export]
-macro_rules! check_userid {
-    ($x:expr, $ctx:expr, $msg:expr) => {
-        match discord::check_and_format_userid($x) {
-            Ok(userid) => {userid}
+macro_rules! parse_discordid {
+    ($id:expr, $x:expr, $ctx:expr, $msg:expr) => {
+        match discord::check_and_format_discordid($id, $x) {
+            Ok(id) => id,
             Err(err) => {
-                $msg.channel_id.say($ctx, err).await?;
+                $msg.channel_id.say($ctx, format!("Error: `{}`, id: `{}`", err, $x)).await?;
+                println!("Couldn't parse id: {}.", $x);
                 return Ok(());
-            },
-
+            }
         }
     };
+}
+
+#[macro_export]
+macro_rules! handle_discord {
+    ($x:expr, $ctx:expr, $msg:expr, $traceback:expr) => {
+        match $x {
+            Ok(data) => data,
+            Err(err) => {
+                $msg.channel_id.say($ctx, format!("{} \nDebug Traceback: `{}`", err, $traceback)).await?;
+                return Ok(());
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! put_response {
+    ($x:expr, $ctx:expr, $msg:expr) => {
+        $msg.channel_id.say($ctx, $x).await?;
+        $msg.delete($ctx).await?;
+        return Ok(());
+    }
 }
