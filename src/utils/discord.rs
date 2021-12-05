@@ -53,16 +53,23 @@ pub fn check_and_format_discordid(id_type: IdTypes, r_id: String) -> Result<Stri
 
 
 pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
-    let user = UserId(bday.userid.parse::<u64>().unwrap()).to_user_cached(ctx).await.unwrap().name;
-
     let role = match bday.notifyrole {
         Some(x) => RoleId(x.parse::<u64>().unwrap()).to_role_cached(ctx).await.unwrap().name,
         None => "everyone".to_string()
     };
 
     let channel = ChannelId(bday.channelid.parse::<u64>().unwrap()).name(ctx).await.unwrap();
-    format!("User: {},In channel: {}, Birthdate: {}, Role to notify: {}, Carlomode: {} \n",
-    user, channel, bday.date.format("%A the %dth of %B"), role, bday.allexceptdate)
+    let date = crate::utils::date_as_year_today(bday.date);
+    format!("In channel: {}, Birthdate: {}, Role to notify: {}, Carlomode: {} \n",
+    channel, date.format("%A the %d of %B"), role, bday.allexceptdate)
+}
+
+pub async fn get_username(ctx: &Context, id: String, guild_id: String) -> String {
+    let user = UserId(id.parse::<u64>().unwrap()).to_user(ctx).await.unwrap();
+    match user.nick_in(ctx, guild_id.parse::<u64>().unwrap()).await {
+        Some(x) => x,
+        None => user.name
+    }
 }
 
 #[macro_export]
@@ -72,7 +79,6 @@ macro_rules! parse_discordid {
             Ok(id) => id,
             Err(err) => {
                 $msg.channel_id.say($ctx, format!("Error: `{}`, id: `{}`", err, $x)).await?;
-                println!("Couldn't parse id: {}.", $x);
                 return Ok(());
             }
         }

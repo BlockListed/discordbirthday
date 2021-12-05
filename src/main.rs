@@ -22,11 +22,14 @@ use diesel::{
     Connection,
     prelude::*
 };
+#[macro_use]
+extern crate diesel_migrations;
 use dotenv::dotenv;
 
 mod bot;
 
 use bot::commands::COMMANDS_GROUP;
+use bot::BOT_HELP;
 use bot::commands::Handler;
 
 mod models;
@@ -42,12 +45,16 @@ lazy_static! {
     static ref DB: Mutex<SqliteConnection> = Mutex::new(establish_connection());
 }
 
+embed_migrations!();
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+    embedded_migrations::run(DB.lock().unwrap().deref_mut()).unwrap();
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix(";"))
+        .help(&BOT_HELP)
         .group(&COMMANDS_GROUP);
 
     let client = serenity::client::ClientBuilder::new(env::var("DISCORD_TOKEN").unwrap())
@@ -71,7 +78,7 @@ async fn poll_bdays(client: Arc<Client>) {
         loop {
             let http = (cache_and_http).http.clone();
             let today_naive = Utc::today().naive_local();
-            let mut bdays_today = birthdays.filter(date.eq(date_as_year_zero(today_naive)))
+            let mut bdays_today = birthdays.filter(date.eq(utils::date_as_year_zero(today_naive)))
             .load::<models::Birthday>(DB.lock().unwrap().deref_mut()).unwrap();
             bday_process_vec_and_update(http.clone(), today_naive, &mut bdays_today).await;
 
@@ -81,11 +88,6 @@ async fn poll_bdays(client: Arc<Client>) {
             interval.tick().await;
         }
     });
-}
-
-fn date_as_year_zero(date: NaiveDate) -> NaiveDate {
-    let today = date.format("%m-%d").to_string().split('-').map(|x| x.parse::<u32>().unwrap()).collect::<Vec<u32>>();
-    NaiveDate::from_ymd(0, today[0], today[1])
 }
 
 async fn bday_process_vec_and_update(http: Arc<Http>, today_naive: NaiveDate, bdays: &mut Vec<Birthday>) {

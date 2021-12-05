@@ -9,10 +9,12 @@ use crate::put_response;
 
 use serenity::framework::standard::{
     macros::{command, group},
-    Args, CommandResult
+    Args, CommandResult,
+    Delimiter
 };
 #[allow(unused_imports)]
 use serenity::model::prelude::*;
+use serenity::utils::Colour;
 use diesel::prelude::*;
 
 use crate::models::Birthday;
@@ -30,7 +32,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(add, list, delete)]
+#[commands(add, list, delete, clearlastdates)]
 struct Commands;
 
 
@@ -41,15 +43,16 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
     if args.len() < 4 {
         put_response!("Wrong number of arguments! \n`Usage: ;add @Member day month @Notifyrole Option<carlomode[1/0]>`", ctx, msg);
     }
+    // This (checking if user exists) DOESN'T work, fix it.
     let r_userid = parse_discordid!(IdTypes::User, handle_discord!(args.single::<String>(), ctx, msg, "commands_add_userid"), ctx, msg);
     let userid = match UserId(match r_userid.parse::<u64>() {
         Ok(x) => x,
         Err(_) => {
             put_response!("User was invalid!", ctx, msg);
         },
-    }).to_user_cached(ctx).await {
-        Some(_) => r_userid,
-        None => {
+    }).to_user(ctx).await {
+        Ok(_) => r_userid,
+        Err(_) => {
             put_response!(format!("User <@{}> not found!", r_userid), ctx, msg);
         }
     };
@@ -118,7 +121,9 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
     .execute(DB.lock().unwrap().deref_mut()).is_ok() {
         put_response!(format!("Succesfully added birthday to db. <@{}>", msg.author.id), ctx, msg);
     } else {
-        put_response!(format!("Couldn't add birthday to db. <@{}>", msg.author.id), ctx, msg);
+        msg.channel_id.say(ctx, format!("Couldn't add birthday to db. <@{}>. (Does the birthday already exist?)", msg.author.id)).await?;
+        list(ctx, msg, Args::new("", &[Delimiter::Single(' ')])).await?;
+        return Ok(());
     }
 }
 
@@ -136,14 +141,26 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
     } else {
         let results: Vec<Birthday> = birthdays::dsl::birthdays.filter(birthdays::dsl::guildid.eq(msg.guild_id.unwrap().as_u64().to_string()))
         .load::<Birthday>(DB.lock().unwrap().deref_mut()).unwrap();
-        
-        let mut formatted_results: String = String::new();
+        // format!("Birthdays in this server: ```\n{}```", formatted_results)
 
+        let mut formatted_results: Vec<(String, String)> = Vec::new();
         for i in results {
-            formatted_results.push_str(discord::format_bday(ctx, i).await.as_str());
+            let j = i.clone();
+            formatted_results.append(&mut vec![(discord::get_username(ctx, i.userid, i.guildid).await, discord::format_bday(ctx, j).await)]);
         }
 
-        put_response!(format!("Birthdays in this server: ```\n{}```", formatted_results), ctx, msg);
+        msg.channel_id.send_message(ctx, |m| {
+            m.embed(|e| {
+                let embed = e.title("Birthdays in this server:")
+                .colour(Colour::from_rgb(0, 192, 100));
+                for i in formatted_results {
+                    embed.field(i.0, i.1, false);
+                };
+                embed
+            })
+        }).await?;
+        msg.delete(ctx).await?;
+        Ok(())
     }
 }
 
@@ -165,4 +182,17 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
     } else {
             put_response!(format!("Couldn't delete user <@{}> from db.", user_format), ctx, msg);
     }
+}
+
+#[command]
+#[only_in(guilds)]
+#[required_permissions("ADMINISTRATOR")]
+#[description = "clearlastdates: clear all last dates from db. \n`Usage: ;clearlastdates`"]
+async fn clearlastdates(ctx: &Context, msg: &Message)->CommandResult<()> {
+    use crate::schema::birthdays::dsl::*;
+    if ! diesel::update(birthdays).set(lastdate.eq(NaiveDate::from_ymd(0, 1, 1))).execute(DB.lock().unwrap().deref_mut()).is_ok() {
+        put_response!(format!("Couldn't clear lastdates! <@{}>", msg.author.id), ctx, msg);
+    };
+
+    put_response!(format!("Succesfully cleared lastdates! <@{}>", msg.author.id), ctx, msg);
 }
