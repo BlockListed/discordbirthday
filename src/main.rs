@@ -106,8 +106,8 @@ async fn bday_process_vec_and_update(http: Arc<Http>, today_naive: NaiveDate, bd
 }
 
 async fn send_bday(http: Arc<Http>, bday: &mut Birthday, today_naive: NaiveDate) -> Option<&mut Birthday>  {
-    if bday.lastdate >= today_naive {
-        return None;
+    if (bday.allexceptdate && bday.date == utils::date_as_year_zero(Utc::today().naive_utc())) || bday.lastdate >= today_naive {
+        return None
     } else {
         bday.lastdate = today_naive;
         let channel_id = ChannelId::from(bday.channelid.parse::<u64>().unwrap());

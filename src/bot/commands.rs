@@ -38,6 +38,7 @@ struct Commands;
 
 #[command]
 #[only_in(guilds)]
+#[required_permissions("ADMINISTRATOR")]
 #[description = "add: Add a new birthday to the calendar. \n`Usage: ;add @Member day month @Notifyrole Option<carlomode[1/0]>`"]
 async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
     if args.len() < 4 {
@@ -129,6 +130,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
 
 #[command]
 #[only_in(guilds)]
+#[required_permissions("ADMINISTRATOR")]
 #[description = "list: list all birthdays in server or get entry for a user. \n`Usage: ;list [member]`"]
 async fn list(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
     if args.len() == 1 {
@@ -166,6 +168,7 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[required_permissions("ADMINISTRATOR")]
 #[description = "delete: delete a birthday from db. \nUsage: `;delete [member]`"]
 async fn delete(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
     if args.len() != 1 {
