@@ -19,6 +19,7 @@ use diesel::prelude::*;
 
 use crate::models::Birthday;
 use crate::schema::birthdays;
+use crate::utils;
 
 use crate::DB;
 
@@ -108,6 +109,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
     }
 
     let bday = Birthday {
+        id: utils::gen_id(),
         userid,
         channelid,
         notifyrole: notifyid,
@@ -179,7 +181,7 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
     let user_format = user.clone();
 
     if diesel::delete(birthdays::dsl::birthdays)
-        .filter(birthdays::dsl::userid.eq(user))
+        .filter(birthdays::dsl::userid.eq(user)).filter(birthdays::dsl::guildid.eq(msg.guild_id.unwrap().to_string()))
         .execute(DB.lock().unwrap().deref_mut()).is_ok() {
             put_response!(format!("Succesfully deleted user <@{}> from db.", user_format), ctx, msg);
     } else {

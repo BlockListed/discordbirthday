@@ -1,6 +1,7 @@
 -- Your SQL goes here
 CREATE TABLE birthdays (
-  userid TEXT PRIMARY KEY NOT NULL,
+  id TEXT PRIMARY KEY NOT NULL,
+  userid TEXT NOT NULL,
   channelid TEXT NOT NULL,
   guildid TEXT NOT NULL,
   date DATE NOT NULL,

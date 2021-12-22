@@ -35,6 +35,7 @@ use bot::commands::Handler;
 mod models;
 mod schema;
 mod utils;
+mod test;
 
 use models::Birthday;
 
@@ -106,7 +107,7 @@ async fn bday_process_vec_and_update(http: Arc<Http>, today_naive: NaiveDate, bd
 }
 
 async fn send_bday(http: Arc<Http>, bday: &mut Birthday, today_naive: NaiveDate) -> Option<&mut Birthday>  {
-    if (bday.allexceptdate && bday.date == utils::date_as_year_zero(Utc::today().naive_utc())) || bday.lastdate >= today_naive {
+    if  bday.lastdate >= today_naive || (bday.allexceptdate && bday.date == utils::date_as_year_zero(Utc::today().naive_utc())) {
         return None
     } else {
         bday.lastdate = today_naive;
