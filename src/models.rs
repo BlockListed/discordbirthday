@@ -11,5 +11,9 @@ pub struct Birthday {
     pub date: NaiveDate,
     pub lastdate: NaiveDate,
     pub allexceptdate: bool,
+    /*
+    This is Optional, because `@everyone` is handled differently in the Discord API, than when using other roles.
+    So `None` means @everyone and every other role is a `Some`.
+    */
     pub notifyrole: Option<String>,
 }
