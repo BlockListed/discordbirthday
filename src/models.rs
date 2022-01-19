@@ -1,39 +1,19 @@
-use diesel::sqlite::SqliteConnection;
+use diesel::{Queryable, Insertable};
 use chrono::NaiveDate;
-use crate::birthdays;
-use crate::id_gen::id_gen;
+use crate::schema::birthdays;
 
-#[derive(Queryable, Insertable, PartialEq, Debug)]
+#[derive(Queryable, Insertable, PartialEq, Debug, Clone)]
 pub struct Birthday {
-    pub id: i32,
+    pub id: String,
     pub userid: String,
     pub channelid: String,
     pub guildid: String,
     pub date: NaiveDate,
+    pub lastdate: NaiveDate,
     pub allexceptdate: bool,
-    pub notifyall: bool,
-    pub notifyrole: String,
-}
-
-impl Birthday {
-    #[allow(clippy::too_many_arguments)]
-    fn new(conn: &mut SqliteConnection,
-        userid: u64,
-        channelid: u64,
-        guildid: u64,
-        date: NaiveDate,
-        allexceptdate: bool,
-        notifyall: bool,
-        notifyrole: u64) -> Birthday {
-        Birthday {
-            id: id_gen(conn),
-            userid: userid.to_string(),
-            channelid: channelid.to_string(),
-            guildid: guildid.to_string(),
-            date,
-            allexceptdate,
-            notifyall,
-            notifyrole: notifyrole.to_string(),
-        }
-    }
+    /*
+    This is Optional, because `@everyone` is handled differently in the Discord API, than when using other roles.
+    So `None` means @everyone and every other role is a `Some`.
+    */
+    pub notifyrole: Option<String>,
 }

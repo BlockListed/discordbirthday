@@ -1,11 +1,12 @@
 table! {
-    birthdays (userid, guildid, allexceptdate) {
+    birthdays (id) {
+        id -> Text,
         userid -> Text,
         channelid -> Text,
         guildid -> Text,
         date -> Date,
+        lastdate -> Date,
         allexceptdate -> Bool,
-        notifyall -> Bool,
-        notifyrole -> Text,
+        notifyrole -> Nullable<Text>,
     }
 }
