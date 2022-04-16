@@ -12,13 +12,10 @@ use serenity::http::Http;
 use std::sync::Mutex;
 use std::env;
 
-#[macro_use]
-extern crate lazy_static;
 extern crate dotenv;
 #[macro_use]
 extern crate diesel;
 use diesel::{
-    SqliteConnection,
     Connection,
     prelude::*
 };
@@ -36,12 +33,11 @@ mod models;
 mod schema;
 mod utils;
 mod test;
+mod database;
+
+use database::DB;
 
 use models::Birthday;
-
-lazy_static! {
-    static ref DB: Mutex<SqliteConnection> = Mutex::new(establish_connection());
-}
 
 embed_migrations!();
 
