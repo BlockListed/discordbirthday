@@ -101,12 +101,11 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args)->CommandResult<()> {
 
     let date: NaiveDate = NaiveDate::from_ymd(year, month, day);
 
-    let allexceptdate: bool;
-    if args.len() == 5 {
-        allexceptdate = matches!(args.current(), Some("1"));
+    let allexceptdate: bool = if args.len() == 5 {
+        matches!(args.current(), Some("1"))
     } else {
-        allexceptdate = false;
-    }
+        false
+    };
 
     let bday = Birthday {
         id: utils::gen_id(),
@@ -195,7 +194,7 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args)->CommandResult {
 #[description = "clearlastdates: clear all last dates from db. \n`Usage: ;clearlastdates`"]
 async fn clearlastdates(ctx: &Context, msg: &Message)->CommandResult<()> {
     use crate::schema::birthdays::dsl::*;
-    if ! diesel::update(birthdays).set(lastdate.eq(NaiveDate::from_ymd(0, 1, 1))).execute(DB.lock().unwrap().deref_mut()).is_ok() {
+    if diesel::update(birthdays).set(lastdate.eq(NaiveDate::from_ymd(0, 1, 1))).execute(DB.lock().unwrap().deref_mut()).is_err() {
         put_response!(format!("Couldn't clear lastdates! <@{}>", msg.author.id), ctx, msg);
     };
 

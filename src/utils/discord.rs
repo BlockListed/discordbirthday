@@ -61,17 +61,16 @@ pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
     let channel = ChannelId(bday.channelid.parse::<u64>().unwrap()).name(ctx).await.unwrap();
     let date = crate::utils::date_as_year_today(bday.date);
     let day = date.format("%d").to_string().parse::<i32>().unwrap();
-    let date_day_end: &str;
-    if !(11..=13).contains(&day) {
-        date_day_end = match day % 10 {
+    let date_day_end: &str = if !(11..=13).contains(&day) {
+        match day % 10 {
             1 => "st",
             2 => "nd",
             3 => "rd",
             _ => "th"
-        };
+        }
     } else {
-        date_day_end = "th";
-    }
+        "th"
+    };
     format!("In channel: {}, Birthdate: {}, Role to notify: {}, Carlomode: {} \n",
     channel, date.format(format!("%d{} of %B", date_day_end).as_str()), role, bday.allexceptdate)
 }

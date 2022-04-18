@@ -9,7 +9,6 @@ use serenity::client::Client;
 use serenity::model::id::ChannelId;
 use serenity::http::Http;
 
-use std::sync::Mutex;
 use std::env;
 
 extern crate dotenv;
