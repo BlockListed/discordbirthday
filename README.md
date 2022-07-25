@@ -14,8 +14,4 @@ https://stackoverflow.com/a/57767413 (libs.rs vs main.rs differences)
 
 # Todo
 
-* Setup Discord part
-  * Commands
-  * Persistent check for birthdays
-* Diesel
-  * Connect to db
+* Support Sqlite and Postgres in the same binary by first building queries in statements and then sending those to a new function, which either executes or loads them using the currently available db.
