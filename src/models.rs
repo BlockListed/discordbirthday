@@ -1,6 +1,7 @@
-use diesel::{Queryable, Insertable};
-use chrono::NaiveDate;
+#![allow(clippy::extra_unused_lifetimes)]
 use crate::schema::birthdays;
+use chrono::NaiveDate;
+use diesel::{Insertable, Queryable};
 
 #[derive(Queryable, Insertable, PartialEq, Debug, Clone)]
 pub struct Birthday {
