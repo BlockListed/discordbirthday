@@ -84,8 +84,8 @@ async fn bday_process_vec_and_update(
     bdays: &mut [Birthday],
 ) {
     for i in bdays.iter_mut() {
-        if let Some(data) = send_bday(http.clone(), i.clone(), today_naive).await {
-            *i = data;
+        if let Some(_) = send_bday(http.clone(), i, today_naive).await {
+
         }
     }
     for i in bdays.iter() {
@@ -95,9 +95,9 @@ async fn bday_process_vec_and_update(
 
 async fn send_bday(
     http: Arc<Http>,
-    mut bday: Birthday,
+    bday: &mut Birthday,
     today_naive: NaiveDate,
-) -> Option<Birthday> {
+) -> Option<&mut Birthday> {
     let already_processed = bday.lastdate >= today_naive;
     let allexceptdate_not_satisfied =
         bday.allexceptdate && bday.date == utils::date_as_year_zero(Utc::today().naive_utc());

@@ -161,10 +161,9 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
         let mut formatted_results: Vec<(String, String)> = Vec::new();
         for i in results {
-            let j = i.clone();
             formatted_results.append(&mut vec![(
-                discord::get_username(ctx, i.userid, i.guildid).await,
-                discord::format_bday(ctx, j).await,
+                discord::get_username(ctx, &i.userid, &i.guildid).await,
+                discord::format_bday(ctx, i).await,
             )]);
         }
 

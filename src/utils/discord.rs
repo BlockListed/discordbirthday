@@ -91,7 +91,7 @@ pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
     )
 }
 
-pub async fn get_username(ctx: &Context, id: String, guild_id: String) -> String {
+pub async fn get_username(ctx: &Context, id: &String, guild_id: &String) -> String {
     let user = UserId(id.parse::<u64>().unwrap())
         .to_user(ctx)
         .await
