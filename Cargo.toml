@@ -10,11 +10,6 @@ lto = true
 codegen-units = 1
 opt-level = 3
 
-[features]
-default = ["postgres"]
-postgres = []
-sqlite = []
-
 [dependencies]
 # Thing below is only needed for Sqlite Upsert support.
 # Yeeted from https://github.com/diesel-rs/diesel/issues/1854#issuecomment-828407144 / SO https://stackoverflow.com/a/68616930

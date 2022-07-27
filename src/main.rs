@@ -84,9 +84,7 @@ async fn bday_process_vec_and_update(
     bdays: &mut [Birthday],
 ) {
     for i in bdays.iter_mut() {
-        if let Some(_) = send_bday(http.clone(), i, today_naive).await {
-
-        }
+        if let Some(_) = send_bday(http.clone(), i, today_naive).await {}
     }
     for i in bdays.iter() {
         database::statements::update_bday_last_updated(&i.userid, i.lastdate);
