@@ -1,4 +1,4 @@
-FROM rust:1.59 as builder
+FROM rust:latest as builder
 WORKDIR /usr/src/dbday
 COPY . .
 RUN cargo install --path .
