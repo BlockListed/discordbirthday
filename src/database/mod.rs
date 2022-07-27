@@ -22,5 +22,8 @@ pub static DB: Lazy<Mutex<DbType>> = Lazy::new(|| {
             SqliteConnection::establish(&std::env::var("DATABASE_URL").unwrap())
                 .expect("Failed to initialise sqlite DB."),
         )),
+        _ => {
+            panic!("Database type not provided! Environment var DATABASE_TYPE")
+        }
     }
 });
