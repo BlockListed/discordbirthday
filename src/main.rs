@@ -40,7 +40,14 @@ embed_migrations!();
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    embedded_migrations::run(get_postgres_db_lock!()).unwrap();
+    match &*DB.lock().unwrap() {
+        database::DbType::Postgres(x) => {
+            embedded_migrations::run(x).unwrap();
+        },
+        database::DbType::Sqlite(x) => {
+            embedded_migrations::run(x).unwrap();
+        }
+    }
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix(";"))
@@ -84,7 +91,7 @@ async fn bday_process_vec_and_update(
     bdays: &mut [Birthday],
 ) {
     for i in bdays.iter_mut() {
-        if let Some(_) = send_bday(http.clone(), i, today_naive).await {}
+        if send_bday(http.clone(), i, today_naive).await.is_some() {}
     }
     for i in bdays.iter() {
         database::statements::update_bday_last_updated(&i.userid, i.lastdate);
