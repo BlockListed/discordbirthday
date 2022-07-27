@@ -151,7 +151,14 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
 async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if args.len() == 1 {
         let userid = parse_discordid!(IdTypes::User, &args.single::<String>().unwrap(), ctx, msg);
-        let result = statements::get_bday_with_userid(&userid);
+        let result = match statements::get_bday_with_userid(&userid) {
+            Some(x) => x,
+            None => {
+                msg.delete(ctx).await.unwrap();
+                msg.channel_id.say(ctx, format!("Couldn't find user <@{}>", userid)).await.unwrap();
+                return Ok(())
+            }
+        };
 
         put_response!(discord::format_bday(ctx, result).await, ctx, msg);
     } else {
