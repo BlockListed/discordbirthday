@@ -155,8 +155,11 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             Some(x) => x,
             None => {
                 msg.delete(ctx).await.unwrap();
-                msg.channel_id.say(ctx, format!("Couldn't find user <@{}>", userid)).await.unwrap();
-                return Ok(())
+                msg.channel_id
+                    .say(ctx, format!("Couldn't find user <@{}>", userid))
+                    .await
+                    .unwrap();
+                return Ok(());
             }
         };
 

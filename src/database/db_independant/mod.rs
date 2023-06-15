@@ -1,76 +1,31 @@
-// No, I don't know what all this trait black magic does.
-// The compiler told me to add this and it's working so I
-// do not care.
-
 use diesel::prelude::*;
+use diesel::query_dsl::methods::ExecuteDsl;
+use diesel::query_dsl::LoadQuery;
 
-pub fn execute_dsl_postgres<T>(statement: T, database: &PgConnection) -> QueryResult<usize>
+use super::DbType;
+
+pub fn execute_query<Q>(query: Q) -> QueryResult<usize>
 where
-    T: RunQueryDsl<PgConnection>
-        + diesel::query_builder::QueryId
-        + diesel::query_builder::QueryFragment<diesel::pg::Pg>,
+    Q: RunQueryDsl<PgConnection>
+        + RunQueryDsl<SqliteConnection>
+        + ExecuteDsl<PgConnection>
+        + ExecuteDsl<SqliteConnection>,
 {
-    statement.execute(database)
+    match &mut *super::DB.lock().unwrap() {
+        DbType::Postgres(conn) => query.execute(conn),
+        DbType::Sqlite(conn) => query.execute(conn),
+    }
 }
 
-pub fn load_dsl_postgres<T, D>(statement: T, database: &PgConnection) -> QueryResult<Vec<D>>
+pub fn load_query<'a, R, Q>(query: Q) -> Vec<R>
 where
-    T: RunQueryDsl<PgConnection>
-        + diesel::query_builder::QueryId
-        + diesel::query_builder::QueryFragment<diesel::pg::Pg>
-        + diesel::query_builder::Query,
-    D: diesel::Queryable<<T as diesel::query_builder::Query>::SqlType, diesel::pg::Pg>,
-    diesel::pg::Pg: diesel::sql_types::HasSqlType<<T as diesel::query_builder::Query>::SqlType>,
+    Q: RunQueryDsl<PgConnection>
+        + RunQueryDsl<SqliteConnection>
+        + LoadQuery<'a, PgConnection, R>
+        + LoadQuery<'a, SqliteConnection, R>,
 {
-    statement.load(database)
-}
-
-pub fn execute_dsl_sqlite<T>(statement: T, database: &SqliteConnection) -> QueryResult<usize>
-where
-    T: RunQueryDsl<SqliteConnection>
-        + diesel::query_builder::QueryId
-        + diesel::query_builder::QueryFragment<diesel::sqlite::Sqlite>,
-{
-    statement.execute(database)
-}
-
-pub fn load_dsl_sqlite<T, D>(statement: T, database: &SqliteConnection) -> QueryResult<Vec<D>>
-where
-    T: RunQueryDsl<SqliteConnection>
-        + diesel::query_builder::QueryId
-        + diesel::query_builder::QueryFragment<diesel::sqlite::Sqlite>
-        + diesel::query_builder::Query,
-    D: diesel::Queryable<<T as diesel::query_builder::Query>::SqlType, diesel::sqlite::Sqlite>,
-    diesel::sqlite::Sqlite:
-        diesel::sql_types::HasSqlType<<T as diesel::query_builder::Query>::SqlType>,
-{
-    statement.load(database)
-}
-
-#[macro_export]
-macro_rules! load_dsl {
-    ($statement:expr) => {
-        match &*$crate::database::DB.lock().unwrap() {
-            $crate::database::DbType::Postgres(x) => {
-                $crate::database::db_independant::load_dsl_postgres($statement, &x)
-            },
-            $crate::database::DbType::Sqlite(x) => {
-                $crate::database::db_independant::load_dsl_sqlite($statement, &x)
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! execute_dsl {
-    ($statement:expr) => {
-        match &*$crate::database::DB.lock().unwrap() {
-            $crate::database::DbType::Postgres(x) => {
-                $crate::database::db_independant::execute_dsl_postgres($statement, &x)
-            },
-            $crate::database::DbType::Sqlite(x) => {
-                $crate::database::db_independant::execute_dsl_sqlite($statement, &x)
-            }
-        }
-    };
+    match &mut *super::DB.lock().unwrap() {
+        DbType::Postgres(conn) => query.load(conn).unwrap(),
+        DbType::Sqlite(conn) => query.load(conn).unwrap(),
+    }
 }

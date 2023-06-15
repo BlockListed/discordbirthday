@@ -10,13 +10,13 @@ use std::sync::Arc;
 use tokio::task;
 use tokio::time::{interval, Duration};
 
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+
 use std::env;
 
 extern crate dotenv;
 #[macro_use]
 extern crate diesel;
-#[macro_use]
-extern crate diesel_migrations;
 use dotenv::dotenv;
 
 mod bot;
@@ -35,17 +35,17 @@ use models::Birthday;
 
 use crate::database::DB;
 
-embed_migrations!();
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    match &*DB.lock().unwrap() {
-        database::DbType::Postgres(x) => {
-            embedded_migrations::run(x).unwrap();
-        },
-        database::DbType::Sqlite(x) => {
-            embedded_migrations::run(x).unwrap();
+    match &mut *DB.lock().unwrap() {
+        database::DbType::Postgres(conn) => {
+            conn.run_pending_migrations(MIGRATIONS).unwrap();
+        }
+        database::DbType::Sqlite(conn) => {
+            conn.run_pending_migrations(MIGRATIONS).unwrap();
         }
     }
 
@@ -74,7 +74,7 @@ async fn poll_bdays(client: Arc<Client>) {
     task::spawn(async move {
         loop {
             let http = (cache_and_http).http.clone();
-            let today_naive = Utc::today().naive_local();
+            let today_naive = Utc::now().date_naive();
             let mut bdays_today = database::statements::get_bdays_today(today_naive);
             bday_process_vec_and_update(http.clone(), today_naive, &mut bdays_today).await;
 
@@ -105,7 +105,7 @@ async fn send_bday(
 ) -> Option<&mut Birthday> {
     let already_processed = bday.lastdate >= today_naive;
     let allexceptdate_not_satisfied =
-        bday.allexceptdate && bday.date == utils::date_as_year_zero(Utc::today().naive_utc());
+        bday.allexceptdate && bday.date == utils::date_as_year_zero(Utc::now().date_naive());
     if already_processed || allexceptdate_not_satisfied {
         return None;
     }
