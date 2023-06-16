@@ -59,7 +59,6 @@ pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
         Some(x) => {
             RoleId(x.parse::<u64>().unwrap())
                 .to_role_cached(ctx)
-                .await
                 .unwrap()
                 .name
         }

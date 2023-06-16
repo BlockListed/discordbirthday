@@ -88,7 +88,6 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
                 put_response!(format!("Your value `{}` wasn't a valid role!", x), ctx, msg);
             })
             .to_role_cached(ctx)
-            .await
             {
                 Some(_) => x.to_string(),
                 None => {

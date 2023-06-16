@@ -6,6 +6,7 @@ use serenity::client::Client;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
 use serenity::model::id::ChannelId;
+use serenity::prelude::GatewayIntents;
 use std::sync::Arc;
 use tokio::task;
 use tokio::time::{interval, Duration};
@@ -54,7 +55,8 @@ async fn main() {
         .help(&BOT_HELP)
         .group(&COMMANDS_GROUP);
 
-    let client = serenity::client::ClientBuilder::new(env::var("DISCORD_TOKEN").unwrap())
+    let intents = GatewayIntents::GUILDS | GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let client = serenity::client::ClientBuilder::new(env::var("DISCORD_TOKEN").unwrap(), intents)
         .event_handler(Handler)
         .framework(framework)
         .await
