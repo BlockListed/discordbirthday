@@ -40,7 +40,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
     if args.len() < 4 {
         put_response!("Wrong number of arguments! \n`Usage: ;add @Member day month @Notifyrole Option<carlomode[1/0]>`", ctx, msg);
     }
-    // This (checking if user exists) DOESN'T work, fix it.
+    // This (checking if user exists) isn't implemented, fix it.
     let r_userid = parse_discordid!(
         IdTypes::User,
         handle_result_with_traceback!(&args.single::<String>(), ctx, msg, "commands_add_userid"),
@@ -104,7 +104,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
 
     let channelid = msg.channel_id.to_string();
 
-    let date: NaiveDate = NaiveDate::from_ymd(year, month, day);
+    let date: NaiveDate = NaiveDate::from_ymd_opt(year, month, day).unwrap();
 
     let allexceptdate: bool = if args.len() == 5 {
         matches!(args.current(), Some("1"))
@@ -119,7 +119,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
         notifyrole: notifyid,
         guildid,
         date,
-        lastdate: NaiveDate::from_ymd(0, 1, 1),
+        lastdate: NaiveDate::from_ymd_opt(0, 1, 1).unwrap(),
         allexceptdate,
     };
 
