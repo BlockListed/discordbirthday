@@ -65,7 +65,7 @@ async fn main() {
     let mut arc = Arc::new(client);
     poll_bdays(arc.clone()).await;
     if let Err(why) = Arc::get_mut(&mut arc).unwrap().start().await {
-        println!("An error occurred while running the client: {:?}", why);
+        println!("An error occurred while running the client: {why:?}");
     }
 }
 

@@ -84,7 +84,7 @@ pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
     format!(
         "In channel: {}, Birthdate: {}, Role to notify: {}, Carlomode: {} \n",
         channel,
-        date.format(format!("%d{} of %B", date_day_end).as_str()),
+        date.format(format!("%d{date_day_end} of %B").as_str()),
         role,
         bday.allexceptdate
     )

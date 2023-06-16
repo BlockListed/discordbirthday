@@ -58,7 +58,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
     {
         r_userid
     } else {
-        put_response!(format!("User <@{}> not found!", r_userid), ctx, msg);
+        put_response!(format!("User <@{r_userid}> not found!"), ctx, msg);
     };
 
     let day: u32 = if let Ok(val) = args.single::<u32>() {
@@ -81,18 +81,15 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
 
     let notifyid: Option<String> = match p_notifyid.as_str() {
         "everyone" => None,
-        x => Some({
-            match RoleId(if let Ok(y) = x.parse::<u64>() {
-                y
+        role => Some({
+            let Ok(parsed_id) = role.parse::<u64>() else {
+                put_response!(format!("Your value `{role}` wasn't a valid role!"), ctx, msg);
+            };
+            
+            if RoleId(parsed_id).to_role_cached(ctx).is_some() {
+                role.to_string()
             } else {
-                put_response!(format!("Your value `{}` wasn't a valid role!", x), ctx, msg);
-            })
-            .to_role_cached(ctx)
-            {
-                Some(_) => x.to_string(),
-                None => {
-                    put_response!(format!("Your value `{}` wasn't a valid role!", x), ctx, msg);
-                }
+                put_response!(format!("Your value `{role}` wasn't a valid role!"), ctx, msg);
             }
         }),
     };
@@ -150,16 +147,13 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
 async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if args.len() == 1 {
         let userid = parse_discordid!(IdTypes::User, &args.single::<String>().unwrap(), ctx, msg);
-        let result = match statements::get_bday_with_userid(&userid) {
-            Some(x) => x,
-            None => {
-                msg.delete(ctx).await.unwrap();
-                msg.channel_id
-                    .say(ctx, format!("Couldn't find user <@{}>", userid))
-                    .await
-                    .unwrap();
-                return Ok(());
-            }
+        let Some(result) = statements::get_bday_with_userid(&userid) else {
+            msg.delete(ctx).await.unwrap();
+            msg.channel_id
+                .say(ctx, format!("Couldn't fix user <@{userid}>"))
+                .await
+                .unwrap();
+            return Ok(());
         };
 
         put_response!(discord::format_bday(ctx, result).await, ctx, msg);
@@ -218,13 +212,13 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         .is_ok()
     {
         put_response!(
-            format!("Succesfully deleted user <@{}> from db.", user),
+            format!("Succesfully deleted user <@{user}> from db."),
             ctx,
             msg
         );
     } else {
         put_response!(
-            format!("Couldn't delete user <@{}> from db.", user),
+            format!("Couldn't delete user <@{user}> from db."),
             ctx,
             msg
         );
