@@ -12,7 +12,7 @@ use crate::schema::birthdays::dsl::*;
 
 use crate::utils;
 
-pub fn update_bday_last_updated(update_userid: &String, updated_lastdate: NaiveDate) {
+pub fn update_bday_last_updated(update_userid: &str, updated_lastdate: NaiveDate) {
     execute_query(
         update(birthdays.filter(userid.eq(update_userid))).set(lastdate.eq(updated_lastdate)),
     )
@@ -38,13 +38,13 @@ pub fn get_bday_with_userid(uid: &str) -> Option<Birthday> {
     }
 }
 
-pub fn get_bdays_with_guildid(gid: &String) -> Vec<Birthday> {
+pub fn get_bdays_with_guildid(gid: &str) -> Vec<Birthday> {
     load_query(birthdays.filter(guildid.eq(gid)))
 }
 
 pub fn delete_bday_with_userid_and_guildid(
-    d_userid: &String,
-    d_guildid: &String,
+    d_userid: &str,
+    d_guildid: &str,
 ) -> QueryResult<usize> {
     execute_query(
         delete(birthdays)
@@ -57,7 +57,7 @@ pub fn get_allexceptdata_bdays() -> Vec<Birthday> {
     load_query(birthdays.filter(allexceptdate.eq(true)))
 }
 
-pub fn check_if_id_exists(id_gen: &String) -> bool {
+pub fn check_if_id_exists(id_gen: &str) -> bool {
     let data: Vec<Birthday> = load_query(birthdays.filter(id.eq(id_gen)).limit(1));
 
     !data.is_empty()
