@@ -109,7 +109,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
     };
 
     let bday = Birthday {
-        id: utils::gen_id(),
+        id: utils::gen_id().await,
         userid,
         channelid,
         notifyrole: notifyid,
@@ -119,7 +119,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
         allexceptdate,
     };
 
-    if statements::insert_bday(bday).is_ok() {
+    if statements::insert_bday(bday).await.is_ok() {
         put_response!(
             format!("Succesfully added birthday to db. <@{}>", msg.author.id),
             ctx,
@@ -147,7 +147,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
 async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if args.len() == 1 {
         let userid = parse_discordid!(IdTypes::User, &args.single::<String>().unwrap(), ctx, msg);
-        let Some(result) = statements::get_bday_with_userid(&userid) else {
+        let Some(result) = statements::get_bday_with_userid(userid.clone()).await else {
             msg.delete(ctx).await.unwrap();
             msg.channel_id
                 .say(ctx, format!("Couldn't fix user <@{userid}>"))
@@ -159,7 +159,7 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         put_response!(discord::format_bday(ctx, result).await, ctx, msg);
     } else {
         let results =
-            statements::get_bdays_with_guildid(&msg.guild_id.unwrap().as_u64().to_string());
+            statements::get_bdays_with_guildid(*msg.guild_id.unwrap().as_u64()).await;
         // format!("Birthdays in this server: ```\n{}```", formatted_results)
 
         let mut formatted_results: Vec<(String, String)> = Vec::new();
@@ -209,6 +209,7 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     );
 
     if statements::delete_bday_with_userid_and_guildid(&user, &msg.guild_id.unwrap().to_string())
+        .await
         .is_ok()
     {
         put_response!(
@@ -230,7 +231,7 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[required_permissions("ADMINISTRATOR")]
 #[description = "clearlastdates: clear all last dates from db. \n`Usage: ;clearlastdates`"]
 async fn clearlastdates(ctx: &Context, msg: &Message) -> CommandResult<()> {
-    if statements::clear_all_lastdates().is_err() {
+    if statements::clear_all_lastdates().await.is_err() {
         put_response!(
             format!("Couldn't clear lastdates! <@{}>", msg.author.id),
             ctx,

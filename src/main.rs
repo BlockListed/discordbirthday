@@ -1,4 +1,5 @@
 #![deny(clippy::pedantic)]
+#![allow(clippy::similar_names)]
 
 use chrono::NaiveDate;
 use chrono::Utc;
@@ -29,21 +30,20 @@ use bot::BOT_HELP;
 mod database;
 mod models;
 mod schema;
-mod test;
 mod utils;
 
 use models::Birthday;
 
-use crate::database::DB;
+use crate::database::get_db;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    match &mut *DB.lock().unwrap() {
+    match &mut *get_db().await.lock().await {
         database::DbType::Postgres(conn) => {
-            conn.run_pending_migrations(MIGRATIONS).unwrap();
+            conn.synchronous.run_pending_migrations(MIGRATIONS).unwrap();
         }
         database::DbType::Sqlite(conn) => {
             conn.run_pending_migrations(MIGRATIONS).unwrap();
@@ -77,10 +77,10 @@ async fn poll_bdays(client: Arc<Client>) {
         loop {
             let http = (cache_and_http).http.clone();
             let today_naive = Utc::now().date_naive();
-            let mut bdays_today = database::statements::get_bdays_today(today_naive);
+            let mut bdays_today = database::statements::get_bdays_today(today_naive).await;
             bday_process_vec_and_update(http.clone(), today_naive, &mut bdays_today).await;
 
-            let mut bdays_all_except = database::statements::get_allexceptdata_bdays();
+            let mut bdays_all_except = database::statements::get_allexceptdate_bdays().await;
             bday_process_vec_and_update(http.clone(), today_naive, &mut bdays_all_except).await;
             interval.tick().await;
         }
@@ -96,7 +96,7 @@ async fn bday_process_vec_and_update(
         if send_bday(http.clone(), i, today_naive).await.is_some() {}
     }
     for i in bdays.iter() {
-        database::statements::update_bday_last_updated(&i.userid, i.lastdate);
+        database::statements::update_bday_last_updated(&i.userid, i.lastdate).await;
     }
 }
 

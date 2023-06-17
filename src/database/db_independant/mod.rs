@@ -2,30 +2,37 @@ use diesel::prelude::*;
 use diesel::query_dsl::methods::ExecuteDsl;
 use diesel::query_dsl::LoadQuery;
 
+use diesel_async::methods::ExecuteDsl as AsyncExecuteDsl;
+use diesel_async::methods::LoadQuery as AsyncLoadQuery;
+use diesel_async::RunQueryDsl as AsyncRunQueryDsl;
+use diesel_async::AsyncPgConnection;
+
 use super::DbType;
 
-pub fn execute_query<Q>(query: Q) -> QueryResult<usize>
+pub async fn execute_query<Q>(query: Q) -> QueryResult<usize>
 where
-    Q: RunQueryDsl<PgConnection>
+    Q: AsyncRunQueryDsl<AsyncPgConnection>
         + RunQueryDsl<SqliteConnection>
-        + ExecuteDsl<PgConnection>
+        + AsyncExecuteDsl<AsyncPgConnection>
         + ExecuteDsl<SqliteConnection>,
 {
-    match &mut *super::DB.lock().unwrap() {
-        DbType::Postgres(conn) => query.execute(conn),
-        DbType::Sqlite(conn) => query.execute(conn),
+    match &mut *super::get_db().await.lock().await {
+        DbType::Postgres(conn) => AsyncRunQueryDsl::execute(query, &mut conn.asynchronous).await,
+        DbType::Sqlite(conn) => RunQueryDsl::execute(query, conn),
     }
 }
 
-pub fn load_query<'a, R, Q>(query: Q) -> Vec<R>
+pub async fn load_query<'a, R, Q>(query: Q) -> Vec<R>
 where
-    Q: RunQueryDsl<PgConnection>
+    Q: AsyncRunQueryDsl<AsyncPgConnection>
         + RunQueryDsl<SqliteConnection>
-        + LoadQuery<'a, PgConnection, R>
-        + LoadQuery<'a, SqliteConnection, R>,
+        + AsyncLoadQuery<'a, AsyncPgConnection, R>
+        + LoadQuery<'a, SqliteConnection, R>
+        + 'a,
+    R: Send,
 {
-    match &mut *super::DB.lock().unwrap() {
-        DbType::Postgres(conn) => query.load(conn).unwrap(),
-        DbType::Sqlite(conn) => query.load(conn).unwrap(),
+    match &mut *super::get_db().await.lock().await {
+        DbType::Postgres(conn) => AsyncRunQueryDsl::load(query, &mut conn.asynchronous).await.unwrap(),
+        DbType::Sqlite(conn) => RunQueryDsl::load(query, conn).unwrap(),
     }
 }
