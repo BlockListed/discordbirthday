@@ -1,4 +1,5 @@
 #![deny(clippy::pedantic)]
+#![warn(clippy::nursery)]
 #![allow(clippy::similar_names)]
 
 use chrono::NaiveDate;
@@ -12,13 +13,9 @@ use std::sync::Arc;
 use tokio::task;
 use tokio::time::{interval, Duration};
 
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-
 use std::env;
 
 extern crate dotenv;
-#[macro_use]
-extern crate diesel;
 use dotenv::dotenv;
 
 mod bot;
@@ -34,28 +31,21 @@ mod utils;
 
 use models::Birthday;
 
-use crate::database::get_db;
-
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
-
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    match &mut *get_db().await.lock().await {
-        database::DbType::Postgres(conn) => {
-            conn.synchronous.run_pending_migrations(MIGRATIONS).unwrap();
-        }
-        database::DbType::Sqlite(conn) => {
-            conn.run_pending_migrations(MIGRATIONS).unwrap();
-        }
-    }
+
+    database::migration::migrate().await;
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix(";"))
         .help(&BOT_HELP)
         .group(&COMMANDS_GROUP);
 
-    let intents = GatewayIntents::GUILDS | GatewayIntents::GUILD_MEMBERS | GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let intents = GatewayIntents::GUILDS
+        | GatewayIntents::GUILD_MEMBERS
+        | GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT;
     let client = serenity::client::ClientBuilder::new(env::var("DISCORD_TOKEN").unwrap(), intents)
         .event_handler(Handler)
         .framework(framework)

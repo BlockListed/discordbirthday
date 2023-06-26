@@ -1,12 +1,14 @@
-table! {
-    birthdays (id) {
-        id -> Text,
-        userid -> Text,
-        channelid -> Text,
-        guildid -> Text,
-        date -> Date,
-        lastdate -> Date,
-        allexceptdate -> Bool,
-        notifyrole -> Nullable<Text>,
-    }
+use sea_query::Iden;
+
+#[derive(Iden, Clone, Copy)]
+pub enum Birthdays {
+    Table,
+    Id,
+    Userid,
+    Channelid,
+    Guildid,
+    Date,
+    Lastdate,
+    Allexceptdate,
+    NotifyRole,
 }

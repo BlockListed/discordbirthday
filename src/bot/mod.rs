@@ -21,6 +21,8 @@ async fn bot_help(
     groups: &[&'static CommandGroup],
     owners: HashSet<UserId>,
 ) -> CommandResult {
-    help_commands::with_embeds(context, msg, args, help_options, groups, owners).await.unwrap();
+    help_commands::with_embeds(context, msg, args, help_options, groups, owners)
+        .await
+        .unwrap();
     Ok(())
 }

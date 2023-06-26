@@ -1,9 +1,8 @@
-#![allow(clippy::extra_unused_lifetimes)]
-use crate::schema::birthdays;
 use chrono::NaiveDate;
-use diesel::{Insertable, Queryable};
 
-#[derive(Queryable, Insertable, PartialEq, Debug, Clone)]
+use sqlx::FromRow;
+
+#[derive(FromRow, PartialEq, Eq, Debug, Clone)]
 pub struct Birthday {
     pub id: String,
     pub userid: String,

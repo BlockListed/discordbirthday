@@ -85,11 +85,15 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
             let Ok(parsed_id) = role.parse::<u64>() else {
                 put_response!(format!("Your value `{role}` wasn't a valid role!"), ctx, msg);
             };
-            
+
             if RoleId(parsed_id).to_role_cached(ctx).is_some() {
                 role.to_string()
             } else {
-                put_response!(format!("Your value `{role}` wasn't a valid role!"), ctx, msg);
+                put_response!(
+                    format!("Your value `{role}` wasn't a valid role!"),
+                    ctx,
+                    msg
+                );
             }
         }),
     };
@@ -109,7 +113,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
     };
 
     let bday = Birthday {
-        id: utils::gen_id().await,
+        id: utils::gen_id(),
         userid,
         channelid,
         notifyrole: notifyid,
@@ -136,8 +140,8 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
             )
             .await?;
         list(ctx, msg, Args::new("", &[Delimiter::Single(' ')])).await?;
-        return Ok(());
     }
+    Ok(())
 }
 
 #[command]
@@ -147,7 +151,7 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult<()> 
 async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if args.len() == 1 {
         let userid = parse_discordid!(IdTypes::User, &args.single::<String>().unwrap(), ctx, msg);
-        let Some(result) = statements::get_bday_with_userid(userid.clone()).await else {
+        let Some(result) = statements::get_bday_with_userid(userid.parse::<u64>().unwrap()).await else {
             msg.delete(ctx).await.unwrap();
             msg.channel_id
                 .say(ctx, format!("Couldn't fix user <@{userid}>"))
@@ -158,8 +162,7 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
         put_response!(discord::format_bday(ctx, result).await, ctx, msg);
     } else {
-        let results =
-            statements::get_bdays_with_guildid(*msg.guild_id.unwrap().as_u64()).await;
+        let results = statements::get_bdays_with_guildid(*msg.guild_id.unwrap().as_u64()).await;
         // format!("Birthdays in this server: ```\n{}```", formatted_results)
 
         let mut formatted_results: Vec<(String, String)> = Vec::new();
@@ -188,6 +191,7 @@ async fn list(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     }
 }
 
+#[allow(clippy::branches_sharing_code)]
 #[command]
 #[only_in(guilds)]
 #[required_permissions("ADMINISTRATOR")]
@@ -213,16 +217,12 @@ async fn delete(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         .is_ok()
     {
         put_response!(
-            format!("Succesfully deleted user <@{user}> from db."),
+            format!("Successfully deleted user <@{user}> from db."),
             ctx,
             msg
         );
     } else {
-        put_response!(
-            format!("Couldn't delete user <@{user}> from db."),
-            ctx,
-            msg
-        );
+        put_response!(format!("Couldn't delete user <@{user}> from db."), ctx, msg);
     }
 }
 

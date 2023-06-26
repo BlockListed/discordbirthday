@@ -9,7 +9,7 @@ use serenity::model::prelude::*;
 use std::cmp::PartialEq;
 
 #[allow(dead_code)]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum IdTypes {
     User,
     Role,
@@ -55,15 +55,15 @@ pub fn check_and_format_discordid(id_type: IdTypes, r_id: &str) -> Result<String
 }
 
 pub async fn format_bday(ctx: &Context, bday: Birthday) -> String {
-    let role = match bday.notifyrole {
-        Some(x) => {
+    let role = bday.notifyrole.map_or_else(
+        || "everyone".to_string(),
+        |x| {
             RoleId(x.parse::<u64>().unwrap())
                 .to_role_cached(ctx)
                 .unwrap()
                 .name
-        }
-        None => "everyone".to_string(),
-    };
+        },
+    );
 
     let channel = ChannelId(bday.channelid.parse::<u64>().unwrap())
         .name(ctx)
